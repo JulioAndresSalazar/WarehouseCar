@@ -1,14 +1,15 @@
-#Genetic algorithm for path planning
-import csv
-import random
+#Import required libraries
+import csv, random
 
 def randomDirection():
+    #This function returns a random cardinal direction
     directions = 'NESW'
     direction_list = ''
     direction_list = direction_list + directions[random.randint(0,3)]
     return direction_list
     
 def generateDirections():
+    #This function returns a list of random cardinal directions 
     directions = 'NESW'
     direction_list = ''
     for i in range(direction_length):
@@ -16,25 +17,28 @@ def generateDirections():
     return direction_list
 
 def load_rooms(filename):
+    #This function loads in room data for the warehouse
     rooms = []
     with open(filename) as csvfile:
         reader = csv.reader(csvfile, delimiter=',', quotechar='|')
         for row in reader:
             rooms +=[row]
-        #print(rooms)
+        #print(rooms) #optional 
         return rooms
         
 def get_room(rooms, room_num):
+    #This function returns the room data for a specific room number
     room = [] 
     for element in rooms:
         if str(room_num) == element[0]:
             room += (element)
         else:
             pass
-    #print(room)
+    #print(room) #optional
     return room
 
 def get_next_room_num(room, direction):
+    #This function returns the next room number given a starting room and a direction
     next_room_num = 0
     if direction == 'N':
         next_room_num = room[1]
@@ -47,31 +51,21 @@ def get_next_room_num(room, direction):
     return next_room_num
 
 def get_room_type(room):
+    #This function returns the type of room
     room_type = "Empty"
     room_type = room[5]
-    #if map_size == '2x2':
-    #    room_type = room[5]
-    #elif map_size == '4x4':
-    #elif map_size == '6x6':
-    #elif map_size == '9x9'
-    #print(room_type)
     return room_type
-        
-#def normalizeLength(string1, string2):
-#    string1 = string1 + string2[len(string1):] # add onto pop1 any extra characters from pop2
-#    string2 = string2 + string1[len(string2):] # add onto pop2 any extra characters from pop1
-#    return string1, string2
 
 def generationZero():
+    #This function creates an initial list of random directions
     generation = []
     for i in range(population_size):
         directions = generateDirections()
-        #print(directions)
         generation.append(directions)
-    #print('Generation 0: ' + str(generation) + '\n')
     return generation
 
 def truncateDirections(start_room, directions): 
+    #This function truncates the directions given to it at a solution point
     i = 0
     for i in range(len(directions)):
         type = get_room_type(get_room(rooms,start_room))
@@ -79,38 +73,33 @@ def truncateDirections(start_room, directions):
             return True
         next_room = get_next_room_num(get_room(rooms, start_room), directions[i])
         if next_room == '0':
-            #print('dead end, staying in room: ' + str(start_room))
             pass  
         else:
             start_room = next_room
-            #print('now in room: ' + str(start_room))
             type = get_room_type(get_room(rooms,start_room))
-            #print(type)
             if type == 'Product':
-                #print('Product found!')
-                #print(start_room)
-                #print('i: ' + str(i))
+                print('Product found!')
                 return directions[0:i+1]
         i += 1
-    #print('no product')
-    #print('i: ' + str(i))
+    print('no product')
     return directions[0:i+1] 
 
 def sortGeneration(generation_0):
+    #This function sorts the initial generation from shortest to longest
     new_generation = []
     j = 0
     for directions in generation_0:
-        new_directions = truncateDirections(start_room, generation_0[j]) #actual truncate/check if solution
+        new_directions = truncateDirections(start_room, generation_0[j])
         if new_directions == True:
             return True
         else:
-            #print(new_directions)
             new_generation.append(new_directions)
             j += 1
     new_generation.sort(key=len) 
     return new_generation
       
 def cull(new_generation):
+    #This function gets rid of the non-viable members of the generation
     next_gen = []
     i = 0
     while i < cull_number:  
@@ -119,6 +108,7 @@ def cull(new_generation):
     return next_gen
 
 def mutation(new_directions):
+    #This function introduces random mutations into a set of directions
     random_direction = randomDirection()
     ls = list(new_directions)
     random_index = random.randint(0, len(new_directions)-1)
@@ -127,6 +117,7 @@ def mutation(new_directions):
     return new_directions
 
 def randomlyCombine(next_gen):
+    #This function randomly combines members of a generation
     next_gen_0 = []
     for i in range(population_size):
         index1 = random.randint(0, len(next_gen) - 1)
@@ -142,22 +133,21 @@ def randomlyCombine(next_gen):
     return next_gen_0
 
 def run():
+    #This is the main function loop
     generation_0 = generationZero()
     for i in range(generation_runs):
-        sorted_generation = sortGeneration(generation_0) #we truncate here at the solution point
-        #print('Sorted/Truncated Generation: ' + str(sorted_generation) + '\n')
+        sorted_generation = sortGeneration(generation_0) 
         if sorted_generation == True:
             result = 'Product already in room'
             return result
         else:
             culled_generation = cull(sorted_generation)
-            #print('Culled Generation: ' + str(culled_generation) + '\n')
             new_generation = randomlyCombine(culled_generation)
-            #print('New Generation: ' + str(new_generation) + '\n')
             generation_0 = new_generation
     return culled_generation
 
 def nextDoor():
+    #This function returns the next door given a direction
     next_door = solution[0][0]
     if next_door == 'P':
         pass
@@ -166,19 +156,15 @@ def nextDoor():
         
 #Choose from four map sizes:
 #'2x2' '4x4' '6x6' '9x9'
-#2 moves 
-#6 moves
-#10 moves
-#16 moves
 map_size = '2x2' 
 rooms = load_rooms('/home/julio/Documents/ES2/Final Project/warehouse' + map_size + '.csv')
 
-#Manipulate genetic algorithm parameters
-direction_length = 10 #20 good
-population_size = 15 #20 good size
-cull_number = 1 #lower = better
-generation_runs = 8 #from 5 to 10
-prob_random = 0.4 
+#Adjust these parameters as needed
+direction_length = 10 #Determines how long the sets of directions are
+population_size = 15 #Determines size of the generations
+cull_number = 1 #A lower number is better
+generation_runs = 8 #Determines how many times to run the script
+prob_random = 0.4 #The probability of a mutation introduced into any given direction
 
 #Change start_room as necessary
 start_room = 11
